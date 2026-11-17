@@ -1,0 +1,49 @@
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant CR as Credencial RFID/QR
+    participant L as Lector y torniquete
+    participant CT as Controlador de acceso
+    participant SA as Servicio de Control de Acceso
+    participant ID as Directorio institucional
+    participant DB as BD de permisos y bitácora
+    participant SG as Consola de seguridad
+
+    U->>CR: Presenta la credencial
+    CR->>L: Envía identificador seguro
+    L->>CT: Credencial + ID de lector + sentido
+    CT->>SA: POST /access/validate
+    activate SA
+    SA->>SA: Autentica el controlador con mTLS/JWT
+    SA->>ID: Consulta titular, rol y vigencia
+    ID-->>SA: Identidad y estado
+    SA->>DB: Consulta permisos por zona y horario
+    DB-->>SA: Reglas aplicables
+    SA->>DB: Verifica anti-passback y aforo
+    DB-->>SA: Estado de tránsito
+
+    alt Acceso autorizado
+        SA->>DB: Registra ACCESO_CONCEDIDO
+        SA-->>CT: 200 OK, decisión PERMITIDO
+        CT->>L: Activa relé de apertura
+        L-->>U: Luz verde y paso libre
+        U->>L: Cruza el punto de acceso
+        L->>CT: Señal de paso confirmado
+        CT->>SA: Evento de tránsito completado
+        SA->>DB: Actualiza aforo y auditoría
+        opt Evento relevante
+            SA->>SG: Notificación en tiempo real
+        end
+    else Acceso denegado
+        SA->>DB: Registra ACCESO_DENEGADO y motivo
+        SA-->>CT: 403 Forbidden, decisión DENEGADO
+        CT->>L: Mantiene el bloqueo
+        L-->>U: Luz roja y aviso
+        opt Reintentos o credencial bloqueada
+            SA->>SG: Alerta de seguridad
+            SG-->>U: Solicita identificación en recepción
+        end
+    end
+
+    deactivate SA
+    Note over SA,DB: Cada evento queda en la bitácora para auditoría y reportes

@@ -1,0 +1,31 @@
+sequenceDiagram
+    autonumber
+    actor V as Visitante
+    actor R as Recepcionista
+    participant P as Portal de visitas
+    participant H as Anfitrión
+    participant SA as Servicio de Control de Acceso
+    participant L as Lector QR y torniquete
+    participant SG as Consola de seguridad
+
+    V->>R: Se presenta en recepción
+    R->>P: Registra datos de la visita
+    P->>H: Solicita aprobación
+    alt El anfitrión aprueba
+        H-->>P: Aprueba la visita
+        P->>SA: Emite pase QR temporal
+        SA-->>P: Pase con vigencia y zona
+        P-->>R: Genera credencial QR
+        R-->>V: Entrega el pase
+        V->>L: Escanea el código QR
+        L->>SA: Valida el pase
+        SA-->>L: Decisión PERMITIDO
+        L->>L: Abre el torniquete
+        SA->>SA: Registra entrada y hora
+        opt Visita sensible o fuera de horario
+            SA->>SG: Notifica para seguimiento
+        end
+    else El anfitrión rechaza o no responde
+        P-->>R: Visita no autorizada
+        R-->>V: Informa el rechazo
+    end

@@ -1,0 +1,14 @@
+# Compilados y dependencias
+control-acceso-uacm/target/
+*.class
+*.log
+
+# Archivos del sistema operativo
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# IDE / editores
+.idea/
+.vscode/
+*.iml
